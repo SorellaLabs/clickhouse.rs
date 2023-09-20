@@ -66,7 +66,10 @@ impl Query {
     /// }
     /// # Ok(()) }
     /// ```
-    pub fn fetch<T: Row>(mut self) -> Result<RowCursor<T>> {
+    pub fn fetch<T>(mut self) -> Result<RowCursor<T>>
+    where
+        T: Row + for<'b> Deserialize<'b>,
+    {
         self.sql.bind_fields::<T>();
         self.sql.append(" FORMAT RowBinary");
 
