@@ -1,3 +1,4 @@
+use crate::join_column_names_insert;
 use core::marker::PhantomData;
 use std::{future::Future, mem, panic, pin::Pin, time::Duration};
 
@@ -24,6 +25,8 @@ const MIN_CHUNK_SIZE: usize = BUFFER_SIZE - 1024; // slightly less to avoid extr
 /// Rows are being sent progressively to spread network load.
 #[must_use]
 pub struct Insert<T: InsertRow + Serialize> {
+    client: Client,
+    table: String,
     buffer: BytesMut,
     #[cfg(feature = "wa-37420")]
     chunk_count: usize,
@@ -35,7 +38,7 @@ pub struct Insert<T: InsertRow + Serialize> {
     // Use boxed `Sleep` to reuse a timer entry, it improves performance.
     // Also, `tokio::time::timeout()` significantly increases a future's size.
     sleep: Pin<Box<Sleep>>,
-    handle: JoinHandle<Result<()>>,
+    handle: Option<JoinHandle<Result<()>>>,
     _marker: PhantomData<fn() -> T>, // TODO: test contravariance.
 }
 
@@ -57,60 +60,21 @@ impl<T> Insert<T>
 where
     T: InsertRow + Serialize,
 {
-    pub(crate) fn new(client: &Client) -> Result<Self> {
-        let mut url = Url::parse(&client.url).map_err(|err| Error::InvalidParams(err.into()))?;
-        let mut pairs = url.query_pairs_mut();
-        pairs.clear();
-
-        if let Some(database) = &client.database {
-            pairs.append_pair("database", database);
-        }
-
-        let fields = row::join_column_names::<T>()
-            .expect("the row type must be a struct or a wrapper around it");
-
-        // TODO: what about escaping a table name?
-        // https://clickhouse.yandex/docs/en/query_language/syntax/#syntax-identifiers
-        let query = format!("INSERT INTO {table}({fields}) FORMAT RowBinary");
-        pairs.append_pair("query", &query);
-
-        if client.compression.is_lz4() {
-            pairs.append_pair("decompress", "1");
-        }
-
-        drop(pairs);
-
-        let mut builder = Request::post(url.as_str());
-
-        if let Some(user) = &client.user {
-            builder = builder.header("X-ClickHouse-User", user);
-        }
-
-        if let Some(password) = &client.password {
-            builder = builder.header("X-ClickHouse-Key", password);
-        }
-
-        let (sender, body) = Body::channel();
-
-        let request = builder
-            .body(body)
-            .map_err(|err| Error::InvalidParams(Box::new(err)))?;
-
-        let future = client.client._request(request);
-        let handle =
-            tokio::spawn(async move { Response::new(future, Compression::None).finish().await });
-
+    pub(crate) fn new(client: Client, table: String) -> Result<Self> {
+        let compression = client.compression;
         Ok(Self {
+            client,
+            table,
             buffer: BytesMut::with_capacity(BUFFER_SIZE),
             #[cfg(feature = "wa-37420")]
             chunk_count: 0,
-            sender: Some(sender),
+            sender: None,
             #[cfg(feature = "lz4")]
-            compression: client.compression,
+            compression,
             send_timeout: None,
             end_timeout: None,
             sleep: Box::pin(tokio::time::sleep(Duration::new(0, 0))),
-            handle,
+            handle: None,
             _marker: Default::default(),
         })
     }
@@ -147,11 +111,62 @@ where
         self.end_timeout = end_timeout;
     }
 
+    fn init_client(&mut self, row: &T) -> Result<()> {
+        let mut url =
+            Url::parse(&self.client.url).map_err(|err| Error::InvalidParams(err.into()))?;
+        let mut pairs = url.query_pairs_mut();
+        pairs.clear();
+
+        if let Some(database) = &self.client.database {
+            pairs.append_pair("database", &database);
+        }
+        let fields = join_column_names_insert(row)
+            .expect("the row type must be a struct or a wrapper around it");
+
+        // TODO: what about escaping a table name?
+        // https://clickhouse.yandex/docs/en/query_language/syntax/#syntax-identifiers
+        let query = format!("INSERT INTO {}({fields}) FORMAT RowBinary", self.table);
+        pairs.append_pair("query", &query);
+
+        if self.client.compression.is_lz4() {
+            pairs.append_pair("decompress", "1");
+        }
+
+        drop(pairs);
+
+        let mut builder = Request::post(url.as_str());
+
+        if let Some(user) = &self.client.user {
+            builder = builder.header("X-ClickHouse-User", user);
+        }
+
+        if let Some(password) = &self.client.password {
+            builder = builder.header("X-ClickHouse-Key", password);
+        }
+
+        let (sender, body) = Body::channel();
+
+        let request = builder
+            .body(body)
+            .map_err(|err| Error::InvalidParams(Box::new(err)))?;
+
+        let future = self.client.client._request(request);
+        let handle =
+            tokio::spawn(async move { Response::new(future, Compression::None).finish().await });
+
+        self.handle = Some(handle);
+        self.sender = Some(sender);
+        Ok(())
+    }
+
     /// Serializes and writes to the socket a provided row.
     ///
     /// # Panics
     /// If called after previous call returned an error.
     pub fn write<'a>(&'a mut self, row: &T) -> impl Future<Output = Result<()>> + 'a + Send {
+        if self.handle.is_none() {
+            self.init_client(row).expect("failed to start client");
+        }
         assert!(self.sender.is_some(), "write() after error");
         let result = rowbinary::serialize_into(&mut self.buffer, row);
         if result.is_err() {
@@ -218,13 +233,15 @@ where
     }
 
     async fn wait_handle(&mut self) -> Result<()> {
-        match timeout!(self, end_timeout, &mut self.handle) {
+        let mut handle = self.handle.as_mut().unwrap();
+
+        match timeout!(self, end_timeout, &mut handle) {
             Some(Ok(res)) => res,
             Some(Err(err)) if err.is_panic() => panic::resume_unwind(err.into_panic()),
             Some(Err(err)) => Err(Error::Custom(format!("unexpected error: {err}"))),
             None => {
                 // We can do nothing useful here, so just shut down the background task.
-                self.handle.abort();
+                self.handle.as_ref().unwrap().abort();
                 Err(Error::TimedOut)
             }
         }

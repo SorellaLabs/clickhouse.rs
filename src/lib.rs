@@ -178,13 +178,19 @@ impl Client {
     ///
     /// # Panics
     /// If `T` has unnamed fields, e.g. tuples.
-    pub fn insert<T: InsertRow + Serialize>(&self) -> Result<insert::Insert<T>> {
-        insert::Insert::new(self)
+    pub fn insert<T: InsertRow + Serialize>(
+        &self,
+        table: String,
+    ) -> Result<insert::Insert<T>> {
+        insert::Insert::new(self.clone(), table)
     }
 
     /// Creates an inserter to perform multiple INSERTs.
-    pub fn inserter<T: InsertRow + Serialize>(&self) -> Result<inserter::Inserter<T>> {
-        inserter::Inserter::new(self)
+    pub fn inserter<T: InsertRow + Serialize>(
+        &self,
+        table: String,
+    ) -> Result<inserter::Inserter<T>> {
+        inserter::Inserter::new(self, table)
     }
 
     /// Starts a new SELECT/DDL query.

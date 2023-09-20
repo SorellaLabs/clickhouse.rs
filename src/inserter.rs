@@ -17,6 +17,7 @@ const DEFAULT_MAX_ENTRIES: u64 = 500_000;
 #[must_use]
 pub struct Inserter<T: InsertRow + Serialize> {
     client: Client,
+    table: String,
     max_entries: u64,
     send_timeout: Option<Duration>,
     end_timeout: Option<Duration>,
@@ -47,9 +48,10 @@ impl<T> Inserter<T>
 where
     T: InsertRow + Serialize,
 {
-    pub(crate) fn new(client: &Client) -> Result<Self> {
+    pub(crate) fn new(client: &Client, table: String) -> Result<Self> {
         Ok(Self {
             client: client.clone(),
+            table,
             max_entries: DEFAULT_MAX_ENTRIES,
             send_timeout: None,
             end_timeout: None,
@@ -221,7 +223,7 @@ where
     #[inline(never)]
     fn init_insert(&mut self) -> Result<()> {
         debug_assert!(self.insert.is_none());
-        let mut new_insert: Insert<T> = self.client.insert()?;
+        let mut new_insert: Insert<T> = self.client.insert(self.table.clone())?;
         new_insert.set_timeouts(self.send_timeout, self.end_timeout);
         self.insert = Some(new_insert);
         Ok(())
