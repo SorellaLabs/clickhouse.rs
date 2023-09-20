@@ -58,7 +58,28 @@ where
     T: InsertRow + Serialize,
 {
     pub(crate) fn new(client: &Client) -> Result<Self> {
-        let url = Url::parse(&client.url).map_err(|err| Error::InvalidParams(err.into()))?;
+        let mut url = Url::parse(&client.url).map_err(|err| Error::InvalidParams(err.into()))?;
+        let mut pairs = url.query_pairs_mut();
+        pairs.clear();
+
+        if let Some(database) = &client.database {
+            pairs.append_pair("database", database);
+        }
+
+        let fields = row::join_column_names::<T>()
+            .expect("the row type must be a struct or a wrapper around it");
+
+        // TODO: what about escaping a table name?
+        // https://clickhouse.yandex/docs/en/query_language/syntax/#syntax-identifiers
+        let query = format!("INSERT INTO {table}({fields}) FORMAT RowBinary");
+        pairs.append_pair("query", &query);
+
+        if client.compression.is_lz4() {
+            pairs.append_pair("decompress", "1");
+        }
+
+        drop(pairs);
+
         let mut builder = Request::post(url.as_str());
 
         if let Some(user) = &client.user {
