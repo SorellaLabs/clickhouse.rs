@@ -233,9 +233,7 @@ where
     }
 
     async fn wait_handle(&mut self) -> Result<()> {
-        let mut handle = if let Some(h) = self.handle.as_mut() {
-            h
-        } else {
+        let Some(handle) = self.handle.as_mut() else {
             return Ok(());
         };
 
