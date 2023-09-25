@@ -233,7 +233,11 @@ where
     }
 
     async fn wait_handle(&mut self) -> Result<()> {
-        let mut handle = self.handle.as_mut().unwrap();
+        let mut handle = if let Some(h) = self.handle.as_mut() {
+            h
+        } else {
+            return Ok(());
+        };
 
         match timeout!(self, end_timeout, &mut handle) {
             Some(Ok(res)) => res,
