@@ -237,7 +237,7 @@ where
             return Ok(());
         };
 
-        match timeout!(self, end_timeout, &mut handle) {
+        match timeout!(self, end_timeout, handle) {
             Some(Ok(res)) => res,
             Some(Err(err)) if err.is_panic() => panic::resume_unwind(err.into_panic()),
             Some(Err(err)) => Err(Error::Custom(format!("unexpected error: {err}"))),
