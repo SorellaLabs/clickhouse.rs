@@ -6,7 +6,7 @@
 #[macro_use]
 extern crate static_assertions;
 
-use serde::Serialize;
+use ::serde::Serialize;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use hyper::client::connect::HttpConnector;
@@ -178,10 +178,7 @@ impl Client {
     ///
     /// # Panics
     /// If `T` has unnamed fields, e.g. tuples.
-    pub fn insert<T: InsertRow + Serialize>(
-        &self,
-        table: String,
-    ) -> Result<insert::Insert<T>> {
+    pub fn insert<T: InsertRow + Serialize>(&self, table: String) -> Result<insert::Insert<T>> {
         insert::Insert::new(self.clone(), table)
     }
 
