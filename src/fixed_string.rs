@@ -36,3 +36,17 @@ impl FixedString {
         FixedString { string }
     }
 }
+
+impl From<String> for FixedString {
+    fn from(value: String) -> Self {
+        FixedString { string: value }
+    }
+}
+
+impl From<&str> for FixedString {
+    fn from(value: &str) -> Self {
+        FixedString {
+            string: value.to_string(),
+        }
+    }
+}
