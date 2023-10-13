@@ -20,7 +20,10 @@ pub struct Query {
     sql: SqlBuilder,
 }
 
-impl Query {
+impl Query
+where
+    Self: Send + Sync,
+{
     pub(crate) fn new(client: &Client, template: &str) -> Self {
         Self {
             client: client.clone(),
@@ -82,7 +85,7 @@ impl Query {
     /// Note that `T` must be owned.
     pub async fn fetch_one<T>(self) -> Result<T>
     where
-        T: Row + for<'b> Deserialize<'b>,
+        T: Row + for<'b> Deserialize<'b> + Send,
     {
         match self.fetch()?.next().await {
             Ok(Some(row)) => Ok(row),
@@ -96,7 +99,7 @@ impl Query {
     /// Note that `T` must be owned.
     pub async fn fetch_optional<T>(self) -> Result<Option<T>>
     where
-        T: Row + for<'b> Deserialize<'b>,
+        T: Row + for<'b> Deserialize<'b> + Send,
     {
         self.fetch()?.next().await
     }
@@ -106,7 +109,7 @@ impl Query {
     /// Note that `T` must be owned.
     pub async fn fetch_all<T>(self) -> Result<Vec<T>>
     where
-        T: Row + for<'b> Deserialize<'b>,
+        T: Row + for<'b> Deserialize<'b> + Send,
     {
         let mut result = Vec::new();
         let mut cursor = self.fetch::<T>()?;
@@ -181,7 +184,11 @@ impl Query {
 /// A cursor that emits rows.
 pub struct RowCursor<T>(RowBinaryCursor<T>);
 
-impl<T> RowCursor<T> {
+impl<T> RowCursor<T>
+where
+    Self: Send,
+    T: Send,
+{
     /// Emits the next row.
     pub async fn next<'a, 'b: 'a>(&'a mut self) -> Result<Option<T>>
     where

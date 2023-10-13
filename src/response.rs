@@ -122,7 +122,7 @@ pub(crate) struct Chunks<S>(Option<Box<DetectDbException<Decompress<ConvertError
 
 impl<S, E> Chunks<S>
 where
-    S: Stream<Item = Result<Bytes, E>> + Unpin,
+    S: Stream<Item = Result<Bytes, E>> + Unpin + Sync + Send,
     Error: From<E>,
 {
     fn new(stream: S, compression: Compression) -> Self {
@@ -133,7 +133,7 @@ where
 
 impl<S, E> Stream for Chunks<S>
 where
-    S: Stream<Item = Result<Bytes, E>> + Unpin,
+    S: Stream<Item = Result<Bytes, E>> + Unpin + Sync + Send,
     Error: From<E>,
 {
     type Item = Result<Bytes>;
@@ -162,7 +162,7 @@ struct ConvertError<S>(S);
 
 impl<S, E> Stream for ConvertError<S>
 where
-    S: Stream<Item = Result<Bytes, E>> + Unpin,
+    S: Stream<Item = Result<Bytes, E>> + Unpin + Sync + Send,
     Error: From<E>,
 {
     type Item = Result<Bytes>;
