@@ -94,7 +94,7 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let s = FixedString::deserialize(deserializer).map_err(de::Error::custom)?;
-        s.string.parse().map_err(de::Error::custom)
+        let s = String::deserialize(deserializer).map_err(de::Error::custom)?;
+        s.parse().map_err(de::Error::custom)
     }
 }
