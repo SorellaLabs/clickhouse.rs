@@ -40,6 +40,12 @@ impl From<&str> for FixedString {
     }
 }
 
+impl Display for FixedString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.string)
+    }
+}
+
 impl Serialize for FixedString {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -70,7 +76,7 @@ where
     where
         S: Serializer,
     {
-        serializer.collect_str(&format!("{:?}", source))
+        serializer.collect_str(&FixedString::new(format!("{:?}", source)))
     }
 }
 
