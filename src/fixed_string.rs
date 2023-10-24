@@ -1,11 +1,7 @@
-use std::fmt::format;
-use std::fmt::Debug;
-
-use serde::ser::SerializeStruct;
-use serde::Deserialize;
-use serde::Serialize;
-use serde::Serializer;
-use serde_with::SerializeAs;
+use core::fmt::Display;
+use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
+use serde_with::{DeserializeAs, SerializeAs};
+use std::{fmt::Debug, str::FromStr};
 
 /// Wrapper type for a FixedString type in Clickhouse
 /// Uses custom serializing handling in SerializeStruct impl for RowBinarySerializer
@@ -19,7 +15,7 @@ use serde_with::SerializeAs;
 /// ) ...
 ///
 /// query("SELECT t1, toString(t2) FROM test;").fetch...
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct FixedString {
     pub string: String,
 }
@@ -55,6 +51,17 @@ impl Serialize for FixedString {
     }
 }
 
+impl<'de> Deserialize<'de> for FixedString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: String = Deserialize::deserialize(deserializer)?;
+        // do better hex decoding than this
+        Ok(FixedString::new(s))
+    }
+}
+
 impl<T> SerializeAs<T> for FixedString
 where
     T: Debug,
@@ -64,5 +71,19 @@ where
         S: Serializer,
     {
         serializer.collect_str(&format!("{:?}", source))
+    }
+}
+
+impl<'de, T> DeserializeAs<'de, T> for FixedString
+where
+    T: Debug + From<String> + FromStr,
+    T::Err: Display,
+{
+    fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(s.into())
     }
 }
