@@ -1,7 +1,8 @@
 use core::fmt::Display;
-use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
 use std::{
+    convert::{TryFrom, TryInto},
     fmt::{Debug, LowerHex},
     str::FromStr,
 };
@@ -86,12 +87,14 @@ where
 
 impl<'de, T> DeserializeAs<'de, T> for FixedString
 where
-    T: Debug + Deserialize<'de>,
+    T: Debug + FromStr,
+    T::Err: Display,
 {
     fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        Ok(T::deserialize(deserializer)?)
+        let s = String::deserialize(deserializer).map_err(de::Error::custom)?;
+        s.parse().map_err(de::Error::custom)
     }
 }
