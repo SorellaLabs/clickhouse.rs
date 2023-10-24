@@ -66,8 +66,8 @@ impl<'de> Deserialize<'de> for FixedString {
     where
         D: Deserializer<'de>,
     {
-        let s: String = Deserialize::deserialize(deserializer)?;
-        Ok(FixedString::new(s))
+        let s: FixedString = Deserialize::deserialize(deserializer)?;
+        Ok(s)
     }
 }
 
@@ -94,7 +94,7 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let s = String::deserialize(deserializer).map_err(de::Error::custom)?;
-        s.parse().map_err(de::Error::custom)
+        let s = FixedString::deserialize(deserializer).map_err(de::Error::custom)?;
+        s.string.parse().map_err(de::Error::custom)
     }
 }
