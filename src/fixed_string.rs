@@ -76,14 +76,13 @@ where
 
 impl<'de, T> DeserializeAs<'de, T> for FixedString
 where
-    T: Debug + From<String> + FromStr,
+    T: Debug + From<String> + FromStr + Deserialize<'de>,
     T::Err: Display,
 {
     fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let s = String::deserialize(deserializer)?;
-        Ok(s.into())
+        T::deserialize(deserializer)
     }
 }
