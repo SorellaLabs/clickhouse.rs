@@ -66,7 +66,6 @@ impl<'de> Deserialize<'de> for FixedString {
         D: Deserializer<'de>,
     {
         let s: String = Deserialize::deserialize(deserializer)?;
-        // do better hex decoding than this
         Ok(FixedString::new(s))
     }
 }
@@ -79,7 +78,9 @@ where
     where
         S: Serializer,
     {
-        serializer.collect_str(&FixedString::new(format!("{:?}", source)))
+        let mut state = serializer.serialize_struct("FixedString", 1)?;
+        state.serialize_field("FixedString", &format!("{:?}", source))?;
+        state.end()
     }
 }
 
