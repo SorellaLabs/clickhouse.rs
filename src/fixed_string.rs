@@ -77,12 +77,11 @@ where
 impl<'de, T> DeserializeAs<'de, T> for FixedString
 where
     T: Debug + Deserialize<'de>,
-    T::Err: Display,
 {
     fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        T::deserialize(deserializer)
+        Ok(T::deserialize(deserializer)?)
     }
 }
