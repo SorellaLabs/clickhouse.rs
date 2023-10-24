@@ -76,7 +76,7 @@ where
 
 impl<'de, T> DeserializeAs<'de, T> for FixedString
 where
-    T: Debug + From<String> + FromStr + Deserialize<'de>,
+    T: Debug + Deserialize<'de>,
     T::Err: Display,
 {
     fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
