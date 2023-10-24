@@ -1,7 +1,11 @@
+use std::fmt::format;
+use std::fmt::Debug;
+
 use serde::ser::SerializeStruct;
 use serde::Deserialize;
 use serde::Serialize;
 use serde::Serializer;
+use serde_with::SerializeAs;
 
 /// Wrapper type for a FixedString type in Clickhouse
 /// Uses custom serializing handling in SerializeStruct impl for RowBinarySerializer
@@ -18,17 +22,6 @@ use serde::Serializer;
 #[derive(Debug, Deserialize, Clone)]
 pub struct FixedString {
     pub string: String,
-}
-
-impl Serialize for FixedString {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("FixedString", 1)?;
-        state.serialize_field("FixedString", &self.string)?;
-        state.end()
-    }
 }
 
 impl FixedString {
@@ -48,5 +41,28 @@ impl From<&str> for FixedString {
         FixedString {
             string: value.to_string(),
         }
+    }
+}
+
+impl Serialize for FixedString {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("FixedString", 1)?;
+        state.serialize_field("FixedString", &self.string)?;
+        state.end()
+    }
+}
+
+impl<T> SerializeAs<T> for FixedString
+where
+    T: Debug,
+{
+    fn serialize_as<S>(source: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(&format!("{:?}", source))
     }
 }
