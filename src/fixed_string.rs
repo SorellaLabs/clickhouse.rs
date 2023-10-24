@@ -15,7 +15,7 @@ use std::{fmt::Debug, str::FromStr};
 /// ) ...
 ///
 /// query("SELECT t1, toString(t2) FROM test;").fetch...
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FixedString {
     pub string: String,
 }
@@ -23,20 +23,6 @@ pub struct FixedString {
 impl FixedString {
     pub fn new(string: String) -> Self {
         FixedString { string }
-    }
-}
-
-impl From<String> for FixedString {
-    fn from(value: String) -> Self {
-        FixedString { string: value }
-    }
-}
-
-impl From<&str> for FixedString {
-    fn from(value: &str) -> Self {
-        FixedString {
-            string: value.to_string(),
-        }
     }
 }
 
@@ -89,5 +75,11 @@ where
         D: serde::Deserializer<'de>,
     {
         Ok(T::deserialize(deserializer)?)
+    }
+}
+
+impl<D: Debug> From<D> for FixedString {
+    fn from(value: D) -> Self {
+        FixedString::new(format!("{:?}", value))
     }
 }
