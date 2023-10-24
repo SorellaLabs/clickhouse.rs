@@ -1,7 +1,10 @@
 use core::fmt::Display;
 use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
-use std::{fmt::Debug, str::FromStr};
+use std::{
+    fmt::{Debug, LowerHex},
+    str::FromStr,
+};
 
 /// Wrapper type for a FixedString type in Clickhouse
 /// Uses custom serializing handling in SerializeStruct impl for RowBinarySerializer
@@ -15,7 +18,7 @@ use std::{fmt::Debug, str::FromStr};
 /// ) ...
 ///
 /// query("SELECT t1, toString(t2) FROM test;").fetch...
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct FixedString {
     pub string: String,
 }
@@ -23,6 +26,20 @@ pub struct FixedString {
 impl FixedString {
     pub fn new(string: String) -> Self {
         FixedString { string }
+    }
+}
+
+impl From<String> for FixedString {
+    fn from(value: String) -> Self {
+        FixedString { string: value }
+    }
+}
+
+impl From<&str> for FixedString {
+    fn from(value: &str) -> Self {
+        FixedString {
+            string: value.to_string(),
+        }
     }
 }
 
@@ -75,11 +92,5 @@ where
         D: serde::Deserializer<'de>,
     {
         Ok(T::deserialize(deserializer)?)
-    }
-}
-
-impl<D: Debug> From<D> for FixedString {
-    fn from(value: D) -> Self {
-        FixedString::new(format!("{:?}", value))
     }
 }
