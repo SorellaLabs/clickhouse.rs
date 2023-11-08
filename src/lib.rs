@@ -86,6 +86,18 @@ impl Default for Client {
 }
 
 impl Client {
+    /// returns the credentials
+    pub fn credentials(&self) -> Credentials {
+        Credentials {
+            url: self.url.clone(),
+            database: self.database.clone(),
+            user: self.user.clone(),
+            password: self.password.clone(),
+            compression: self.compression,
+            options: self.options.clone(),
+        }
+    }
+
     /// Creates a new client with a specified underlying HTTP client.
     /// Now only [`hyper::Client`] is supported.
     pub fn with_http_client(client: impl HttpClient) -> Self {
@@ -200,4 +212,14 @@ impl Client {
     pub fn watch(&self, query: &str) -> watch::Watch {
         watch::Watch::new(self, query)
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Credentials {
+    pub url: String,
+    pub database: Option<String>,
+    pub user: Option<String>,
+    pub password: Option<String>,
+    pub compression: Compression,
+    pub options: HashMap<String, String>,
 }
