@@ -19,7 +19,7 @@ use std::{
 /// ) ...
 ///
 /// query("SELECT t1, toString(t2) FROM test;").fetch...
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FixedString {
     pub string: String,
 }
