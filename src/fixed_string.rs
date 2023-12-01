@@ -80,7 +80,7 @@ where
         S: Serializer,
     {
         let mut state = serializer.serialize_struct("FixedString", 1)?;
-        state.serialize_field("FixedString", &format!("{:#x}", source))?;
+        state.serialize_field("FixedString", &format!("{:?}", source))?;
         state.end()
     }
 }
