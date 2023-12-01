@@ -210,7 +210,7 @@ impl<'a, B: BufMut> SerializeStruct for &'a mut RowBinarySerializer<B> {
         value: &T,
     ) -> Result<()> {
         if name == "FixedString" {
-            let value_str: &&String = unsafe { mem::transmute(&value) };
+            let value_str: &String = unsafe { mem::transmute(value) };
             self.buffer.put_slice(value_str.as_bytes());
             Ok(())
         } else {
