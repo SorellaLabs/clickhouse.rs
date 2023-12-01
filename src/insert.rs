@@ -17,6 +17,8 @@ use crate::{
     rowbinary, Client, Compression, InsertRow,
 };
 
+use std::fmt::Debug;
+
 const BUFFER_SIZE: usize = 128 * 1024;
 const MIN_CHUNK_SIZE: usize = BUFFER_SIZE - 1024; // slightly less to avoid extra reallocations
 
@@ -168,6 +170,8 @@ where
             self.init_client(row).expect("failed to start client");
         }
         assert!(self.sender.is_some(), "write() after error");
+        let str = serde_json::to_string(row).unwrap();
+        println!("\n\n\n\nDES: {:?}\n\n\n\n", str);
         let result = rowbinary::serialize_into(&mut self.buffer, row);
         if result.is_err() {
             self.abort();
