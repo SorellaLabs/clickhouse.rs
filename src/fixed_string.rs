@@ -99,6 +99,10 @@ where
             .get("FixedString")
             .ok_or_else(|| de::Error::custom("no FixedString field"))?;
 
-        Ok(FixedString::new(fixed_str.as_str().unwrap().to_string()))
+        fixed_str
+            .as_str()
+            .unwrap()
+            .parse()
+            .map_err(de::Error::custom)
     }
 }
