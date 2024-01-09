@@ -94,7 +94,11 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let s = FixedString::deserialize(deserializer).map_err(de::Error::custom)?;
-        s.string.parse().map_err(de::Error::custom)
+        let obj = serde_json::Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        let fixed_str = obj
+            .get("FixedString")
+            .ok_or_else(|| de::Error::custom("no FixedString field"))?;
+
+        Ok(FixedString::new(fixed_str.as_str().unwrap().to_string()))
     }
 }

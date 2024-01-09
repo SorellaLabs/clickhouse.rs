@@ -37,7 +37,7 @@ debug = true
 default = ["lz4", "tls"]
 
 test-util = ["hyper/server"]
-watch = ["dep:sha-1", "dep:serde_json"]
+watch = ["dep:sha-1"]
 lz4 = ["dep:lz4", "dep:clickhouse-rs-cityhash-sys"]
 uuid = ["dep:uuid"]
 time = ["dep:time"]
@@ -61,7 +61,7 @@ futures = "0.3.5"
 static_assertions = "1.1"
 sealed = "0.4"
 sha-1 = { version = "0.10", optional = true }
-serde_json = { version = "1.0.68", optional = true }
+serde_json = { version = "1.0.68" }
 lz4 = { version = "1.23.3", optional = true }
 clickhouse-rs-cityhash-sys = { version = "0.1.2", optional = true }
 uuid = { version = "1", optional = true }
@@ -72,7 +72,13 @@ bstr = { version = "1.2", default-features = false }
 criterion = "0.4.0"
 serde = { version = "1.0.106", features = ["derive"] }
 tokio = { version = "1.0.1", features = ["full", "test-util"] }
-hyper = { version = "0.14", features = ["client", "tcp", "http1", "stream", "server"] }
+hyper = { version = "0.14", features = [
+  "client",
+  "tcp",
+  "http1",
+  "stream",
+  "server",
+] }
 serde_bytes = "0.11.4"
 serde_repr = "0.1.7"
 uuid = { version = "1", features = ["v4"] }
