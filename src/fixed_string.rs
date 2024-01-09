@@ -95,14 +95,19 @@ where
         D: serde::Deserializer<'de>,
     {
         let obj = serde_json::Value::deserialize(deserializer).map_err(de::Error::custom)?;
-        let fixed_str = obj
-            .get("FixedString")
-            .ok_or_else(|| de::Error::custom("no FixedString field"))?;
 
-        fixed_str
-            .as_str()
-            .unwrap()
-            .parse()
-            .map_err(de::Error::custom)
+        if obj.is_object() {
+            let fixed_str = obj
+                .get("FixedString")
+                .ok_or_else(|| de::Error::custom("no FixedString field"))?;
+
+            fixed_str
+                .as_str()
+                .unwrap()
+                .parse()
+                .map_err(de::Error::custom)
+        } else {
+            obj.as_str().unwrap().parse().map_err(de::Error::custom)
+        }
     }
 }
