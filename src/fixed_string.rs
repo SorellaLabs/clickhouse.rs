@@ -66,8 +66,17 @@ impl<'de> Deserialize<'de> for FixedString {
     where
         D: Deserializer<'de>,
     {
-        let s: String = Deserialize::deserialize(deserializer)?;
-        Ok(FixedString::new(s))
+        let obj = serde_json::Value::deserialize(deserializer).map_err(de::Error::custom)?;
+
+        if obj.is_object() {
+            let fixed_str = obj
+                .get("FixedString")
+                .ok_or_else(|| de::Error::custom("no FixedString field"))?;
+
+            Ok(FixedString::new(fixed_str.as_str().unwrap().to_string()))
+        } else {
+            Ok(FixedString::new(obj.as_str().unwrap().to_string()))
+        }
     }
 }
 
@@ -94,7 +103,20 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let s = FixedString::deserialize(deserializer).map_err(de::Error::custom)?;
-        s.string.parse().map_err(de::Error::custom)
+        let obj = serde_json::Value::deserialize(deserializer).map_err(de::Error::custom)?;
+
+        if obj.is_object() {
+            let fixed_str = obj
+                .get("FixedString")
+                .ok_or_else(|| de::Error::custom("no FixedString field"))?;
+
+            fixed_str
+                .as_str()
+                .unwrap()
+                .parse()
+                .map_err(de::Error::custom)
+        } else {
+            obj.as_str().unwrap().parse().map_err(de::Error::custom)
+        }
     }
 }

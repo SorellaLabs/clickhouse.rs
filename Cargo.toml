@@ -72,7 +72,13 @@ bstr = { version = "1.2", default-features = false }
 criterion = "0.4.0"
 serde = { version = "1.0.106", features = ["derive"] }
 tokio = { version = "1.0.1", features = ["full", "test-util"] }
-hyper = { version = "0.14", features = ["client", "tcp", "http1", "stream", "server"] }
+hyper = { version = "0.14", features = [
+  "client",
+  "tcp",
+  "http1",
+  "stream",
+  "server",
+] }
 serde_bytes = "0.11.4"
 serde_repr = "0.1.7"
 uuid = { version = "1", features = ["v4"] }
