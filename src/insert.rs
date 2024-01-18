@@ -170,8 +170,8 @@ where
             self.init_client(row).expect("failed to start client");
         }
         assert!(self.sender.is_some(), "write() after error");
-        let str = serde_json::to_string(row).unwrap();
-        println!("\n\n\n\nDES: {:?}\n\n\n\n", str);
+        //let str = serde_json::to_string(row).unwrap();
+        //println!("\n\n\n\nDES: {:?}\n\n\n\n", str);
         let result = rowbinary::serialize_into(&mut self.buffer, row);
         if result.is_err() {
             self.abort();
