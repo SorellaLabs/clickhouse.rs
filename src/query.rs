@@ -6,7 +6,7 @@ use crate::{
     cursor::RowBinaryCursor,
     error::{Error, Result},
     response::Response,
-    row::Row,
+    row::DbRow,
     sql::{Bind, SqlBuilder},
     Client,
 };
@@ -71,7 +71,7 @@ where
     /// ```
     pub fn fetch<T>(mut self) -> Result<RowCursor<T>>
     where
-        T: Row + for<'b> Deserialize<'b>,
+        T: DbRow + for<'b> Deserialize<'b>,
     {
         self.sql.bind_fields::<T>();
         self.sql.append(" FORMAT RowBinary");
@@ -85,7 +85,7 @@ where
     /// Note that `T` must be owned.
     pub async fn fetch_one<T>(self) -> Result<T>
     where
-        T: Row + for<'b> Deserialize<'b> + Send,
+        T: DbRow + for<'b> Deserialize<'b> + Send,
     {
         match self.fetch()?.next().await {
             Ok(Some(row)) => Ok(row),
@@ -99,7 +99,7 @@ where
     /// Note that `T` must be owned.
     pub async fn fetch_optional<T>(self) -> Result<Option<T>>
     where
-        T: Row + for<'b> Deserialize<'b> + Send,
+        T: DbRow + for<'b> Deserialize<'b> + Send,
     {
         self.fetch()?.next().await
     }
@@ -109,7 +109,7 @@ where
     /// Note that `T` must be owned.
     pub async fn fetch_all<T>(self) -> Result<Vec<T>>
     where
-        T: Row + for<'b> Deserialize<'b> + Send,
+        T: DbRow + for<'b> Deserialize<'b> + Send,
     {
         let mut result = Vec::new();
         let mut cursor = self.fetch::<T>()?;

@@ -1,6 +1,6 @@
 use crate::sql;
 
-pub trait Row {
+pub trait DbRow {
     const COLUMN_NAMES: &'static [&'static str];
 }
 
@@ -10,7 +10,7 @@ pub trait InsertRow: Send + Sync {
     fn get_column_names(&self) -> &'static [&'static str];
 }
 
-impl<R: Row + Send + Sync> InsertRow for R {
+impl<R: DbRow + Send + Sync> InsertRow for R {
     fn get_column_names(&self) -> &'static [&'static str] {
         R::COLUMN_NAMES
     }
@@ -40,7 +40,7 @@ macro_rules! impl_row_for_tuple {
         ///
         /// The second one is useful for queries like
         /// `SELECT ?fields, count() FROM .. GROUP BY ?fields`.
-        impl<$i: Row, $($other: Primitive),+> Row for ($i, $($other),+) {
+        impl<$i: DbRow, $($other: Primitive),+> DbRow for ($i, $($other),+) {
             const COLUMN_NAMES: &'static [&'static str] = $i::COLUMN_NAMES;
         }
 
@@ -52,18 +52,18 @@ macro_rules! impl_row_for_tuple {
 // TODO: revise this?
 impl Primitive for () {}
 
-impl<P: Primitive> Row for P {
+impl<P: Primitive> DbRow for P {
     const COLUMN_NAMES: &'static [&'static str] = &[];
 }
 
 impl_row_for_tuple!(T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15);
 
-impl<T> Row for Vec<T> {
+impl<T> DbRow for Vec<T> {
     const COLUMN_NAMES: &'static [&'static str] = &[];
 }
 
 /// Collects all field names in depth and joins them with comma.
-pub(crate) fn join_column_names<R: Row>() -> Option<String> {
+pub(crate) fn join_column_names<R: DbRow>() -> Option<String> {
     if R::COLUMN_NAMES.is_empty() {
         return None;
     }
@@ -106,7 +106,7 @@ pub(crate) fn join_column_names_insert<R: InsertRow>(row: &R) -> Option<String> 
 mod tests {
     // XXX: need for `derive(Row)`. Provide `row(crate = ..)` instead.
     use crate as clickhouse;
-    use clickhouse::Row;
+    use clickhouse::DbRow;
 
     use super::*;
 
