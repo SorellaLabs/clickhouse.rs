@@ -167,6 +167,13 @@ impl<'a, B: BufMut> Serializer for &'a mut RowBinarySerializer<B> {
 
     #[inline]
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
+        /*
+        let mut map = serializer.serialize_map(Some(self.len()))?;
+        for (k, v) in self {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+         */
         todo!();
     }
 

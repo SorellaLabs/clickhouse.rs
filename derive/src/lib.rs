@@ -1,7 +1,10 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde_derive_internals::{attr::get_serde_meta_items, Ctxt};
-use syn::{parse_macro_input, Data, DataStruct, DeriveInput, Fields, Ident, Lit, Meta, NestedMeta};
+use syn::{
+    parse_macro_input, Attribute, Data, DataStruct, DeriveInput, Fields, Ident, Lit, Meta,
+    NestedMeta,
+};
 
 /// Parses `#[serde(skip_serializing)]`
 fn serde_skipped(cx: &Ctxt, attrs: &[syn::Attribute]) -> bool {
@@ -78,10 +81,35 @@ fn column_names(data: &DataStruct) -> TokenStream {
     }
 }
 
+/*
+fn parse_container_attributes(attributes: &[Attribute]) -> syn::Result<bool> {
+    let mut skip_impl = false;
+    for attr in attributes {
+        if attr.path.is_ident("clickhouse") {
+            let meta = attr.parse_meta()?;
+            match meta {
+                Meta::List(list) => {
+                    skip_impl = list.nested.into_iter().any(|meta| {
+                        let mut found = false;
+                        match meta {
+                            NestedMeta::Lit(val) => val. = true,
+                            _ => (), //unimplemented!("no meta stuff in nested meta attributes")
+                        };
+                        found
+                    })
+                }
+                _ => unimplemented!("no other attributes yet"),
+            }
+        }
+    }
+
+    Ok(skip_impl)
+}
+*/
 // TODO: support wrappers `Wrapper(Inner)` and `Wrapper<T>(T)`.
 // TODO: support the `nested` attribute.
 // TODO: support the `crate` attribute.
-#[proc_macro_derive(Row)]
+#[proc_macro_derive(Row, attributes(clickhouse))]
 pub fn row(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
@@ -94,7 +122,7 @@ pub fn row(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let expanded = quote! {
-        impl #impl_generics ::clickhouse::Row for #name #ty_generics #where_clause {
+        impl #impl_generics ::clickhouse::DbRow for #name #ty_generics #where_clause {
             const COLUMN_NAMES: &'static [&'static str] = #column_names;
         }
     };

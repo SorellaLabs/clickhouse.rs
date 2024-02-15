@@ -42,7 +42,7 @@ mod compression;
 mod cursor;
 mod http_client;
 mod response;
-mod row;
+pub mod row;
 mod rowbinary;
 mod ticks;
 

@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, Result},
-    row::{self, Row},
+    row::{self, DbRow},
 };
 
 pub use bind::{Bind, Identifier};
@@ -63,7 +63,7 @@ impl SqlBuilder {
         }
     }
 
-    pub(crate) fn bind_fields<T: Row>(&mut self) {
+    pub(crate) fn bind_fields<T: DbRow>(&mut self) {
         if let Self::InProgress { parts, size } = self {
             if let Some(fields) = row::join_column_names::<T>() {
                 for part in parts.iter_mut().filter(|p| matches!(p, Part::Fields)) {
@@ -111,7 +111,7 @@ mod tests {
 
     // XXX: need for `derive(Row)`. Provide `row(crate = ..)` instead.
     use crate as clickhouse;
-    use clickhouse_derive::Row;
+    use clickhouse_derive::DbRow;
 
     #[allow(unused)]
     #[derive(Row)]
