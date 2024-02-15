@@ -16,8 +16,6 @@ impl<R: DbRow + Send + Sync> InsertRow for R {
     }
 }
 
-impl<R: DbRow + Send + Sync> Primitive for R {}
-
 // Actually, it's not public now.
 pub trait Primitive {}
 
