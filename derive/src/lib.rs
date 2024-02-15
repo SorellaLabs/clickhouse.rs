@@ -121,21 +121,8 @@ pub fn row(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    // TODO: replace `clickhouse` with `::clickhouse` here.
-    /*
-      let expanded =  if !skip_impl {
-
-      } else {
-          quote! {
-              impl #impl_generics clickhouse::Row for #name #ty_generics #where_clause {
-                  const COLUMN_NAMES: &'static [&'static str] = #column_names;
-              }
-          }
-      }
-    ; */
-
     let expanded = quote! {
-        impl #impl_generics clickhouse::DbRow for #name #ty_generics #where_clause {
+        impl #impl_generics ::clickhouse::DbRow for #name #ty_generics #where_clause {
             const COLUMN_NAMES: &'static [&'static str] = #column_names;
         }
     };
