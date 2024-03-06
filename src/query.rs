@@ -1,3 +1,5 @@
+use bytes::BufMut;
+use futures::StreamExt;
 use hyper::{header::CONTENT_LENGTH, Body, Method, Request};
 use serde::Deserialize;
 use url::Url;
@@ -5,7 +7,7 @@ use url::Url;
 use crate::{
     cursor::RowBinaryCursor,
     error::{Error, Result},
-    response::Response,
+    response::{Chunks, Response},
     row::DbRow,
     sql::{Bind, SqlBuilder},
     Client,
@@ -116,6 +118,27 @@ where
 
         while let Some(row) = cursor.next().await? {
             result.push(row);
+        }
+
+        Ok(result)
+    }
+
+    /// Executes the query and returns the bytes from clickhouse.
+    /// This returns a result as when processing the bytes. we look at them and check
+    /// for clickhouse errors.
+    pub async fn fetch_raw<T>(mut self) -> Result<Vec<u8>>
+    where
+        T: DbRow + for<'b> Deserialize<'b>,
+    {
+        self.sql.bind_fields::<T>();
+        self.sql.append(" FORMAT RowBinary");
+
+        let mut res = self.do_execute(true)?;
+        let chunks = res.chunks_slow().await?;
+
+        let mut result = Vec::new();
+        while let Some(next) = chunks.next().await {
+            result.put(next?);
         }
 
         Ok(result)

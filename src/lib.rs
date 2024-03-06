@@ -41,6 +41,7 @@ mod buflist;
 mod compression;
 mod cursor;
 mod http_client;
+pub mod remote_cursor;
 mod response;
 pub mod row;
 mod rowbinary;

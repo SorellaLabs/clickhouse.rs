@@ -85,14 +85,14 @@ fn workaround_51132<'a, T>(ptr: &mut T) -> &'a mut T {
 
 // === RowBinaryCursor ===
 
-pub(crate) struct RowBinaryCursor<T> {
+pub struct RowBinaryCursor<T> {
     raw: RawCursor,
     buffer: Vec<u8>,
     _marker: PhantomData<T>,
 }
 
 impl<T> RowBinaryCursor<T> {
-    pub(crate) fn new(response: Response) -> Self {
+    pub fn new(response: Response) -> Self {
         Self {
             raw: RawCursor::new(response),
             buffer: vec![0; INITIAL_BUFFER_SIZE],
@@ -100,7 +100,7 @@ impl<T> RowBinaryCursor<T> {
         }
     }
 
-    pub(crate) async fn next<'a, 'b: 'a>(&'a mut self) -> Result<Option<T>>
+    pub async fn next<'a, 'b: 'a>(&'a mut self) -> Result<Option<T>>
     where
         T: Deserialize<'b>,
     {
