@@ -92,7 +92,7 @@ pub struct RowBinaryCursor<T> {
 }
 
 impl<T> RowBinaryCursor<T> {
-    pub fn new(response: Response) -> Self {
+    pub(crate) fn new(response: Response) -> Self {
         Self {
             raw: RawCursor::new(response),
             buffer: vec![0; INITIAL_BUFFER_SIZE],
@@ -100,7 +100,7 @@ impl<T> RowBinaryCursor<T> {
         }
     }
 
-    pub async fn next<'a, 'b: 'a>(&'a mut self) -> Result<Option<T>>
+    pub(crate) async fn next<'a, 'b: 'a>(&'a mut self) -> Result<Option<T>>
     where
         T: Deserialize<'b>,
     {

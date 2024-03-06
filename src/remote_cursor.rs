@@ -1,10 +1,12 @@
-use crate::rowbinary;
+use crate::DbRow;
+use crate::{error::Error, rowbinary};
 use crate::{response::Chunks, Compression};
 use bytes::Bytes;
 use futures::{Stream, StreamExt};
 use hyper::Body;
 use serde::Deserialize;
 use std::marker::PhantomData;
+use std::ops::DerefMut;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -20,7 +22,7 @@ pub struct RemoteCursor<T, S> {
 
 impl<T, S> RemoteCursor<T, S>
 where
-    S: Stream<Item = Result<Bytes>>,
+    S: Stream<Item = reqwest::Result<Bytes>>,
     T: DbRow + for<'b> Deserialize<'b>,
 {
     pub fn new(stream: S) -> Self {
@@ -35,42 +37,42 @@ where
 
 impl<T, S> Stream for RemoteCursor<T, S>
 where
-    S: Stream<Item = Result<Bytes>> + Unpin,
+    S: Stream<Item = reqwest::Result<Bytes>> + Unpin,
     T: DbRow + for<'b> Deserialize<'b> + Unpin,
 {
     type Item = crate::Result<T>;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let tmp_buf = &mut self.tmp_buf;
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let this = self.get_mut();
         loop {
-            match rowbinary::deserialize_from(&mut self.pending, &mut temp_buf[..]) {
+            match rowbinary::deserialize_from(&mut this.pending, &mut this.tmp_buf[..]) {
                 Ok(value) => {
-                    self.pending.commit();
+                    this.pending.commit();
                     return Poll::Ready(Some(Ok(value)));
                 }
                 Err(Error::TooSmallBuffer(need)) => {
-                    let new_len = (tmp_buf.len() + need)
+                    let new_len = (this.tmp_buf.len() + need)
                         .checked_next_power_of_two()
                         .expect("oom");
-                    tmp_buf.resize(new_len, 0);
+                    this.tmp_buf.resize(new_len, 0);
 
-                    self.pending.rollback();
+                    this.pending.rollback();
                     continue;
                 }
                 Err(Error::NotEnoughData) => {
-                    self.pending.rollback();
+                    this.pending.rollback();
                 }
                 Err(e) => return Poll::Ready(Some(Err(e))),
             }
 
-            match self.stream.poll_next_unpin(cx) {
+            match this.stream.poll_next_unpin(cx) {
                 Poll::Ready(Some(v)) => match v {
                     Ok(val) => {
-                        self.pending.push(val);
+                        this.pending.push(val);
                     }
-                    Err(e) => return Poll::Ready(Some(Err(e))),
+                    Err(e) => return Poll::Ready(Some(Err(Error::Custom(e.to_string())))),
                 },
-                Poll::Ready(None) if self.pending.bufs_cnt() > 0 => {
+                Poll::Ready(None) if this.pending.bufs_cnt() > 0 => {
                     return Poll::Ready(Some(Err(Error::NotEnoughData)));
                 }
                 Poll::Ready(None) => return Poll::Ready(None),
