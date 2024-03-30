@@ -6,9 +6,8 @@ use sha1::{Digest, Sha1};
 use crate::{
     cursor::JsonCursor,
     error::{Error, Result},
-    row::Row,
     sql::{Bind, SqlBuilder},
-    Client, Compression,
+    Client, Compression, DbRow,
 };
 
 #[must_use]
@@ -45,7 +44,7 @@ impl<V> Watch<V> {
 
     // TODO: `groups()` for `(Version, &[T])`.
 
-    fn cursor<T: Row>(mut self, only_events: bool) -> Result<CursorWithInit<T>> {
+    fn cursor<T: DbRow>(mut self, only_events: bool) -> Result<CursorWithInit<T>> {
         self.sql.bind_fields::<T>();
         let sql = self.sql.finish()?;
         let (sql, view) = if is_table_name(&sql) {
@@ -101,7 +100,7 @@ impl Watch<Rows> {
     /// Panics if `T` are rows without specified names.
     /// Only structs are supported in this API.
     #[track_caller]
-    pub fn fetch<T: Row>(self) -> Result<RowCursor<T>> {
+    pub fn fetch<T: DbRow>(self) -> Result<RowCursor<T>> {
         assert!(
             !T::COLUMN_NAMES.is_empty(),
             "only structs are supported in the watch API"
@@ -112,7 +111,7 @@ impl Watch<Rows> {
 
     pub async fn fetch_one<T>(self) -> Result<(Version, T)>
     where
-        T: Row + for<'b> Deserialize<'b>,
+        T: DbRow + for<'b> Deserialize<'b>,
     {
         match self.limit(1).fetch()?.next().await {
             Ok(Some(row)) => Ok(row),
@@ -148,7 +147,7 @@ struct EventPayload {
     version: Version,
 }
 
-impl Row for EventPayload {
+impl DbRow for EventPayload {
     const COLUMN_NAMES: &'static [&'static str] = &[];
 }
 
@@ -171,7 +170,7 @@ struct RowPayload<T> {
     data: T,
 }
 
-impl<T: Row> Row for RowPayload<T> {
+impl<T: DbRow> DbRow for RowPayload<T> {
     const COLUMN_NAMES: &'static [&'static str] = T::COLUMN_NAMES;
 }
 
@@ -179,7 +178,7 @@ impl<T> RowCursor<T> {
     /// Emits the next row.
     pub async fn next<'a, 'b: 'a>(&'a mut self) -> Result<Option<(Version, T)>>
     where
-        T: Deserialize<'b> + Row,
+        T: Deserialize<'b> + DbRow,
     {
         Ok(self
             .0
