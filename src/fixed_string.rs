@@ -30,17 +30,13 @@ impl FixedString {
     }
 }
 
-impl From<String> for FixedString {
-    fn from(value: String) -> Self {
-        FixedString { string: value }
-    }
-}
-
-impl From<&str> for FixedString {
-    fn from(value: &str) -> Self {
-        FixedString {
-            string: value.to_string(),
-        }
+impl<T> From<T> for FixedString
+where
+    String: From<T>,
+{
+    fn from(value: T) -> Self {
+        let string: String = value.into();
+        FixedString { string }
     }
 }
 
