@@ -40,6 +40,16 @@ where
     }
 }
 
+impl FromStr for FixedString {
+    type Err = <String as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(FixedString {
+            string: s.to_string(),
+        })
+    }
+}
+
 impl Display for FixedString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.string)
