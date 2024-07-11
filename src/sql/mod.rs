@@ -15,7 +15,7 @@ pub(crate) enum SqlBuilder {
     Failed(String),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) enum Part {
     Arg,
     Fields,
@@ -58,7 +58,7 @@ impl SqlBuilder {
                 *size += s.len();
                 *part = Part::Text(s);
             } else {
-                panic!("all query arguments are already bound");
+                panic!("all query arguments are already bound:\n{:?}", self);
             }
         }
     }
@@ -96,7 +96,7 @@ impl SqlBuilder {
                             res.push_str(&text);
                             res
                         } else {
-                            panic!("unbound query argument ? or ?fields");
+                            panic!("unbound query argument ? or ?fields:\n{:?}", self);
                         }
                     }))
             }
