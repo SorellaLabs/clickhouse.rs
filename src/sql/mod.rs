@@ -9,7 +9,7 @@ mod bind;
 pub(crate) mod escape;
 mod ser;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) enum SqlBuilder {
     InProgress { parts: Vec<Part>, size: usize },
     Failed(String),
