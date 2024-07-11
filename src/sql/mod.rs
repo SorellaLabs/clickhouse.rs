@@ -86,7 +86,7 @@ impl SqlBuilder {
     }
 
     pub(crate) fn finish(self) -> Result<String> {
-        match self {
+        match self.clone() {
             Self::InProgress { parts, size } => {
                 Ok(parts
                     .into_iter()
