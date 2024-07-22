@@ -53,6 +53,12 @@ impl<'de, B: Buf> RowBinaryDeserializer<'de, B> {
         // TODO: what about another error?
         usize::try_from(size).map_err(|_| Error::NotEnoughData)
     }
+
+    fn read_fixed_size(&mut self) -> Result<usize> {
+        let size = self.input.get_u64();
+        // TODO: what about another error?
+        usize::try_from(size).map_err(|_| Error::NotEnoughData)
+    }
 }
 
 #[inline]

@@ -72,7 +72,7 @@ impl<'de> Deserialize<'de> for FixedString {
     where
         D: Deserializer<'de>,
     {
-        let obj = serde_json::Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        let obj = String::deserialize(deserializer); //.map_err(de::Error::custom)?;
 
         if obj.is_object() {
             let fixed_str = obj
@@ -124,5 +124,17 @@ where
         } else {
             obj.as_str().unwrap().parse().map_err(de::Error::custom)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ser_des() {
+        let value = FixedString {
+            string: "Hello World!".to_string(),
+        };
     }
 }
