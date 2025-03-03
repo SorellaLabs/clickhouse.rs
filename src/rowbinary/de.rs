@@ -125,7 +125,11 @@ impl<'de, 'a, B: Buf> Deserializer<'de> for &'a mut RowBinaryDeserializer<'de, B
 
     #[inline]
     fn deserialize_str<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-        let size = self.read_size()?;
+        let size = if let Ok(s) = self.read_size() {
+            s
+        } else {
+            self.read_fixed_size()?
+        };
         let slice = self.read_slice(size)?;
         let str = str::from_utf8(slice).map_err(Error::from)?;
         visitor.visit_borrowed_str(str)
@@ -133,7 +137,11 @@ impl<'de, 'a, B: Buf> Deserializer<'de> for &'a mut RowBinaryDeserializer<'de, B
 
     #[inline]
     fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-        let size = self.read_size()?;
+        let size = if let Ok(s) = self.read_size() {
+            s
+        } else {
+            self.read_fixed_size()?
+        };
         let vec = self.read_vec(size)?;
         let string = String::from_utf8(vec).map_err(|err| Error::from(err.utf8_error()))?;
         visitor.visit_string(string)
@@ -296,8 +304,37 @@ fn get_unsigned_leb128(mut buffer: impl Buf) -> Result<u64> {
     Ok(value)
 }
 
-#[test]
-fn it_deserializes_unsigned_leb128() {
-    let buf = &[0xe5, 0x8e, 0x26][..];
-    assert_eq!(get_unsigned_leb128(buf).unwrap(), 624_485);
+#[cfg(test)]
+mod tests {
+
+    use bytes::BytesMut;
+
+    use crate::{fixed_string::FixedString, rowbinary::serialize_into};
+
+    use super::*;
+
+    #[test]
+    fn it_deserializes_unsigned_leb128() {
+        let buf = &[0xe5, 0x8e, 0x26][..];
+        assert_eq!(get_unsigned_leb128(buf).unwrap(), 624_485);
+    }
+
+    #[test]
+    fn test_fixed_string() {
+        let value = FixedString {
+            string: "Hello World!".to_string(),
+        };
+
+        let mut buffer = BytesMut::new();
+        serialize_into(&mut buffer, &value).unwrap();
+        let fixed_string: FixedString = deserialize_from(buffer, &mut Vec::new()).unwrap();
+
+        assert_eq!(value, fixed_string);
+
+        let mut buffer = BytesMut::new();
+        serialize_into(&mut buffer, &value.string).unwrap();
+        let string: String = deserialize_from(buffer, &mut Vec::new()).unwrap();
+
+        assert_eq!(value.string, string);
+    }
 }

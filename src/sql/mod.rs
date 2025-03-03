@@ -111,13 +111,15 @@ mod tests {
 
     // XXX: need for `derive(Row)`. Provide `row(crate = ..)` instead.
     use crate as clickhouse;
-    use clickhouse_derive::DbRow;
 
     #[allow(unused)]
-    #[derive(Row)]
     struct Row {
         a: u32,
         b: u32,
+    }
+
+    impl DbRow for Row {
+        const COLUMN_NAMES: &'static [&'static str] = &["a", "b"];
     }
 
     #[test]

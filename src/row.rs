@@ -106,23 +106,27 @@ pub(crate) fn join_column_names_insert<R: InsertRow>(row: &R) -> Option<String> 
 mod tests {
     // XXX: need for `derive(Row)`. Provide `row(crate = ..)` instead.
     use crate as clickhouse;
-    use clickhouse::DbRow;
+    use crate::Row;
 
     use super::*;
 
     #[test]
     fn it_grabs_simple_struct() {
-        #[derive(Row)]
         #[allow(dead_code)]
         struct Simple1 {
             one: u32,
         }
+        impl DbRow for Simple1 {
+            const COLUMN_NAMES: &'static [&'static str] = &["one"];
+        }
 
-        #[derive(Row)]
         #[allow(dead_code)]
         struct Simple2 {
             one: u32,
             two: u32,
+        }
+        impl DbRow for Simple2 {
+            const COLUMN_NAMES: &'static [&'static str] = &["one", "two"];
         }
 
         assert_eq!(join_column_names::<Simple1>().unwrap(), "`one`");
@@ -131,9 +135,12 @@ mod tests {
 
     #[test]
     fn it_grabs_mix() {
-        #[derive(Row)]
         struct SomeRow {
             _a: u32,
+        }
+
+        impl DbRow for SomeRow {
+            const COLUMN_NAMES: &'static [&'static str] = &["_a"];
         }
 
         assert_eq!(join_column_names::<(SomeRow, u32)>().unwrap(), "`_a`");
@@ -143,11 +150,15 @@ mod tests {
     fn it_supports_renaming() {
         use serde::Serialize;
 
-        #[derive(Row, Serialize)]
+        #[derive(Serialize)]
         #[allow(dead_code)]
         struct TopLevel {
             #[serde(rename = "two")]
             one: u32,
+        }
+
+        impl DbRow for TopLevel {
+            const COLUMN_NAMES: &'static [&'static str] = &["two"];
         }
 
         assert_eq!(join_column_names::<TopLevel>().unwrap(), "`two`");
@@ -157,7 +168,7 @@ mod tests {
     fn it_skips_serializing() {
         use serde::Serialize;
 
-        #[derive(Row, Serialize)]
+        #[derive(Serialize)]
         #[allow(dead_code)]
         struct TopLevel {
             one: u32,
@@ -165,13 +176,20 @@ mod tests {
             two: u32,
         }
 
+        impl DbRow for TopLevel {
+            const COLUMN_NAMES: &'static [&'static str] = &["one"];
+        }
+
         assert_eq!(join_column_names::<TopLevel>().unwrap(), "`one`");
     }
 
     #[test]
     fn it_rejects_other() {
-        #[derive(Row)]
         struct NamedTuple(u32, u32);
+
+        impl DbRow for NamedTuple {
+            const COLUMN_NAMES: &'static [&'static str] = &[];
+        }
 
         assert_eq!(join_column_names::<u32>(), None);
         assert_eq!(join_column_names::<(u32, u64)>(), None);
@@ -182,12 +200,16 @@ mod tests {
     fn it_handles_raw_identifiers() {
         use serde::Serialize;
 
-        #[derive(Row, Serialize)]
+        #[derive(Serialize)]
         #[allow(dead_code)]
         struct MyRow {
             r#type: u32,
             #[serde(rename = "if")]
             r#match: u32,
+        }
+
+        impl DbRow for MyRow {
+            const COLUMN_NAMES: &'static [&'static str] = &["type", "if"];
         }
 
         assert_eq!(join_column_names::<MyRow>().unwrap(), "`type`,`if`");

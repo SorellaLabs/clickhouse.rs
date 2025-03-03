@@ -277,11 +277,37 @@ fn put_unsigned_leb128(mut buffer: impl BufMut, mut value: u64) {
     } {}
 }
 
-#[test]
-fn it_serializes_unsigned_leb128() {
-    let mut vec = Vec::new();
+#[cfg(test)]
+mod tests {
+    use bytes::Buf;
 
-    put_unsigned_leb128(&mut vec, 624_485);
+    use crate::fixed_string::FixedString;
 
-    assert_eq!(vec, [0xe5, 0x8e, 0x26]);
+    use super::*;
+
+    #[test]
+    fn it_serializes_unsigned_leb128() {
+        let mut vec = Vec::new();
+
+        put_unsigned_leb128(&mut vec, 624_485);
+
+        assert_eq!(vec, [0xe5, 0x8e, 0x26]);
+    }
+
+    #[test]
+    fn test_fixed_string() {
+        let value = FixedString {
+            string: "Hello World!".to_string(),
+        };
+
+        let mut ser = RowBinarySerializer {
+            buffer: Vec::<u8>::new(),
+        };
+        value.clone().serialize(&mut ser).unwrap();
+
+        assert_eq!(
+            &value.string.bytes().collect::<Vec<_>>(),
+            &ser.buffer.to_vec()
+        )
+    }
 }

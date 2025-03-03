@@ -1,11 +1,7 @@
 use core::fmt::Display;
 use serde::{de, ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt::{Debug, LowerHex},
-    str::FromStr,
-};
+use std::{fmt::Debug, str::FromStr};
 
 /// Wrapper type for a FixedString type in Clickhouse
 /// Uses custom serializing handling in SerializeStruct impl for RowBinarySerializer
@@ -72,17 +68,19 @@ impl<'de> Deserialize<'de> for FixedString {
     where
         D: Deserializer<'de>,
     {
-        let obj = String::deserialize(deserializer); //.map_err(de::Error::custom)?;
+        let obj = String::deserialize(deserializer)?; //.map_err(de::Error::custom)?;
 
-        if obj.is_object() {
-            let fixed_str = obj
-                .get("FixedString")
-                .ok_or_else(|| de::Error::custom("no FixedString field"))?;
+        // if obj.is_object() {
+        //     let fixed_str = obj
+        //         .get("FixedString")
+        //         .ok_or_else(|| de::Error::custom("no FixedString field"))?;
 
-            Ok(FixedString::new(fixed_str.as_str().unwrap().to_string()))
-        } else {
-            Ok(FixedString::new(obj.as_str().unwrap().to_string()))
-        }
+        //     Ok(FixedString::new(fixed_str.as_str().unwrap().to_string()))
+        // } else {
+        //     Ok(FixedString::new(obj.as_str().unwrap().to_string()))
+        // }
+
+        Ok(FixedString::new(obj))
     }
 }
 
@@ -109,32 +107,22 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let obj = serde_json::Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        let obj = String::deserialize(deserializer).map_err(de::Error::custom)?;
 
-        if obj.is_object() {
-            let fixed_str = obj
-                .get("FixedString")
-                .ok_or_else(|| de::Error::custom("no FixedString field"))?;
+        // if obj.is_object() {
+        //     let fixed_str = obj
+        //         .get("FixedString")
+        //         .ok_or_else(|| de::Error::custom("no FixedString field"))?;
 
-            fixed_str
-                .as_str()
-                .unwrap()
-                .parse()
-                .map_err(de::Error::custom)
-        } else {
-            obj.as_str().unwrap().parse().map_err(de::Error::custom)
-        }
-    }
-}
+        //     fixed_str
+        //         .as_str()
+        //         .unwrap()
+        //         .parse()
+        //         .map_err(de::Error::custom)
+        // } else {
+        //     obj.as_str().unwrap().parse().map_err(de::Error::custom)
+        // }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_ser_des() {
-        let value = FixedString {
-            string: "Hello World!".to_string(),
-        };
+        obj.parse().map_err(de::Error::custom)
     }
 }
