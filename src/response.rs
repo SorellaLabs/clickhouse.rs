@@ -72,6 +72,17 @@ impl Response {
         while chunks.try_next().await?.is_some() {}
         Ok(())
     }
+
+    #[cold]
+    #[inline(never)]
+    pub(crate) async fn chunks_slow(&mut self) -> Result<&mut Chunks> {
+        loop {
+            match self {
+                Self::Waiting(future) => *self = Self::Loading(future.await?),
+                Self::Loading(chunks) => break Ok(chunks),
+            }
+        }
+    }
 }
 
 #[cold]
