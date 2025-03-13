@@ -244,7 +244,10 @@ impl Client {
     ///
     /// # Panics
     /// If `T` has unnamed fields, e.g. tuples.
-    pub fn insert<T: DbRow + Serialize>(&self, table: String) -> Result<insert::Insert<T>> {
+    pub fn insert<T: DbRow + Serialize + Send + Sync>(
+        &self,
+        table: String,
+    ) -> Result<insert::Insert<T>> {
         insert::Insert::new(&self.clone(), &table)
     }
 
