@@ -107,6 +107,7 @@ mod tests {
     // XXX: need for `derive(Row)`. Provide `row(crate = ..)` instead.
     use crate as clickhouse;
     use clickhouse::DbRow;
+    use clickhouse_derive::Row;
 
     use super::*;
 
@@ -169,7 +170,23 @@ mod tests {
     }
 
     #[test]
+    fn it_skips_deserializing() {
+        use serde::Deserialize;
+
+        #[derive(Row, Deserialize)]
+        #[allow(dead_code)]
+        struct TopLevel {
+            one: u32,
+            #[serde(skip_deserializing)]
+            two: u32,
+        }
+
+        assert_eq!(join_column_names::<TopLevel>().unwrap(), "`one`");
+    }
+
+    #[test]
     fn it_rejects_other() {
+        #[allow(dead_code)]
         #[derive(Row)]
         struct NamedTuple(u32, u32);
 
